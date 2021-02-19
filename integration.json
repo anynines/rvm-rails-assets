@@ -1,0 +1,8 @@
+{
+  "builder": "paketobuildpacks/builder:full",
+  "rvm-cnb": "github.com/avarteqgmbh/rvm-cnb",
+  "rvm-bundler-cnb": "github.com/avarteqgmbh/rvm-bundler-cnb",
+  "node-engine": "github.com/paketo-buildpacks/node-engine",
+  "yarn": "github.com/paketo-buildpacks/yarn",
+  "yarn-install": "github.com/paketo-buildpacks/yarn-install"
+}
