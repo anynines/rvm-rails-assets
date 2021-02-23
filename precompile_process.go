@@ -29,6 +29,14 @@ func NewPrecompileProcess(executable Executable, logger LogEmitter) PrecompilePr
 
 func (p PrecompileProcess) Execute(workingDir string) error {
 	buffer := bytes.NewBuffer(nil)
+
+	dbAdapterEnvArg := ""
+	env := []string{}
+	if val, ok := os.LookupEnv("DB_ADAPTER"); ok {
+		dbAdapterEnvArg = "DB_ADAPTER=" + val
+		env = append(env, dbAdapterEnvArg)
+	}
+
 	args := []string{
 		"--login",
 		"-c",
@@ -37,6 +45,7 @@ func (p PrecompileProcess) Execute(workingDir string) error {
 				"source",
 				filepath.Join(os.ExpandEnv("$rvm_path"), "profile.d", "rvm"),
 				"&&",
+				dbAdapterEnvArg,
 				"bundle",
 				"exec",
 				"rake",
@@ -45,11 +54,6 @@ func (p PrecompileProcess) Execute(workingDir string) error {
 			},
 			" ",
 		),
-	}
-
-	env := []string{}
-	if val, ok := os.LookupEnv("DB_ADAPTER"); ok {
-		env = append(env, "DB_ADAPTER="+val)
 	}
 
 	p.logger.Subprocess("Running 'bash %s'", strings.Join(args, " "))
