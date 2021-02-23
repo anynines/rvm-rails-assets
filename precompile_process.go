@@ -39,7 +39,7 @@ func (p PrecompileProcess) Execute(workingDir string) error {
 				"&&",
 				"bundle",
 				"exec",
-				"rails",
+				"rake",
 				"assets:precompile",
 				"assets:clean",
 			},
@@ -47,9 +47,15 @@ func (p PrecompileProcess) Execute(workingDir string) error {
 		),
 	}
 
+	env := []string{}
+	if val, ok := os.LookupEnv("DB_ADAPTER"); ok {
+		env = append(env, "DB_ADAPTER="+val)
+	}
+
 	p.logger.Subprocess("Running 'bash %s'", strings.Join(args, " "))
 	err := p.executable.Execute(pexec.Execution{
 		Args:   args,
+		Env:    env,
 		Stdout: buffer,
 		Stderr: buffer,
 	})

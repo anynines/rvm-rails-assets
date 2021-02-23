@@ -63,7 +63,7 @@ func testPrecompileProcess(t *testing.T, context spec.G, it spec.S) {
 			Expect(executions[0].Args).To(Equal([]string{
 				"--login",
 				"-c",
-				"source profile.d/rvm && bundle exec rails assets:precompile assets:clean",
+				"source profile.d/rvm && bundle exec rake assets:precompile assets:clean",
 			}))
 		})
 

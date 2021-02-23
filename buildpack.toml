@@ -3,7 +3,7 @@ api = "0.4"
 [buildpack]
   id = "com.anynines.buildpacks.rvm-rails-assets"
   name = "RVM Buildpack for rails assets"
-  version = "0.0.1"
+  homepage = "https://github.com/avarteqgmbh/rvm-rails-assets"
 
 [metadata]
   include-files = ["bin/build", "bin/detect", "bin/run", "buildpack.toml"]
