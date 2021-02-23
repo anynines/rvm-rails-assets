@@ -31,9 +31,10 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		clock chronos.Clock
 
-		buildProcess     *fakes.BuildProcess
-		calculator       *fakes.Calculator
-		environmentSetup *fakes.EnvironmentSetup
+		buildProcess             *fakes.BuildProcess
+		calculator               *fakes.Calculator
+		environmentSetup         *fakes.EnvironmentSetup
+		environmentConfiguration railsassets.Environment
 
 		build packit.BuildFunc
 	)
@@ -72,8 +73,9 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		calculator.SumCall.Returns.String = "some-calculator-sha"
 
 		environmentSetup = &fakes.EnvironmentSetup{}
+		environmentConfiguration = railsassets.Environment{}
 
-		build = railsassets.Build(buildProcess, calculator, environmentSetup, logEmitter, clock)
+		build = railsassets.Build(buildProcess, calculator, environmentSetup, environmentConfiguration, logEmitter, clock)
 	})
 
 	it.After(func() {

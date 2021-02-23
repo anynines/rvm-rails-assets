@@ -29,10 +29,16 @@ type EnvironmentSetup interface {
 	Link(layerPath, workingDir string) error
 }
 
+//go:generate faux --interface EnvironmentConfiguration --output fakes/environment_configuration.go
+type EnvironmentConfiguration interface {
+	Configure(launchEnv packit.Environment) error
+}
+
 func Build(
 	buildProcess BuildProcess,
 	calculator Calculator,
 	environmentSetup EnvironmentSetup,
+	environmentConfiguration EnvironmentConfiguration,
 	logger LogEmitter,
 	clock chronos.Clock,
 ) packit.BuildFunc {
@@ -92,8 +98,11 @@ func Build(
 		logger.Break()
 
 		assetsLayer.Launch = true
-		assetsLayer.LaunchEnv.Default("RAILS_ENV", "production")
-		assetsLayer.LaunchEnv.Default("RAILS_SERVE_STATIC_FILES", "true")
+
+		err = environmentConfiguration.Configure(assetsLayer.LaunchEnv)
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
 
 		logger.Environment(assetsLayer.LaunchEnv)
 

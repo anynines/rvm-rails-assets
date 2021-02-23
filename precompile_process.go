@@ -28,7 +28,6 @@ func NewPrecompileProcess(executable Executable, logger LogEmitter) PrecompilePr
 }
 
 func (p PrecompileProcess) Execute(workingDir string) error {
-	os.Setenv("RAILS_ENV", "production")
 	buffer := bytes.NewBuffer(nil)
 	args := []string{
 		"--login",

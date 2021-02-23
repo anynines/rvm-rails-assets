@@ -12,7 +12,9 @@ Initially based on a [paketo rails-assets](https://github.com/paketo-buildpacks/
 - If project's "yarn.lock" exists, then Yarn ("yarn-install", "yarn" and "node") is a dependency instead of Node-engine above (Rails v6 mode).
 
 ## Build phase
-- Runs next command in RVM environment
+- Preserves `RAILS_ENV` environment variable or sets it to `production` if not defined.
+- Sets environment variable `RAILS_SERVE_STATIC_FILES=true`.
+- Runs next command in RVM environment.
 ```shell
 "bundle exec rails assets:precompile assets:clean"
 ```
