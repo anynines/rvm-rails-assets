@@ -14,6 +14,7 @@ import (
 	"github.com/avarteqgmbh/rvm-rails-assets/fakes"
 	"github.com/paketo-buildpacks/packit"
 	"github.com/paketo-buildpacks/packit/chronos"
+	"github.com/paketo-buildpacks/packit/scribe"
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
@@ -31,10 +32,9 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		clock chronos.Clock
 
-		buildProcess             *fakes.BuildProcess
-		calculator               *fakes.Calculator
-		environmentSetup         *fakes.EnvironmentSetup
-		environmentConfiguration railsassets.Environment
+		buildProcess     *fakes.BuildProcess
+		calculator       *fakes.Calculator
+		environmentSetup *fakes.EnvironmentSetup
 
 		build packit.BuildFunc
 	)
@@ -53,16 +53,10 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		err = os.MkdirAll(filepath.Join(workingDir, "app", "assets"), os.ModePerm)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = os.MkdirAll(filepath.Join(workingDir, "public", "assets"), os.ModePerm)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = os.MkdirAll(filepath.Join(workingDir, "tmp", "assets", "cache"), os.ModePerm)
-		Expect(err).NotTo(HaveOccurred())
-
 		buildProcess = &fakes.BuildProcess{}
 
 		buffer = bytes.NewBuffer(nil)
-		logEmitter := railsassets.NewLogEmitter(buffer)
+		logger := scribe.NewLogger(buffer)
 
 		timeStamp = time.Now()
 		clock = chronos.NewClock(func() time.Time {
@@ -73,9 +67,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		calculator.SumCall.Returns.String = "some-calculator-sha"
 
 		environmentSetup = &fakes.EnvironmentSetup{}
-		environmentConfiguration = railsassets.Environment{}
 
-		build = railsassets.Build(buildProcess, calculator, environmentSetup, environmentConfiguration, logEmitter, clock)
+		build = railsassets.Build(buildProcess, calculator, environmentSetup, logger, clock)
 	})
 
 	it.After(func() {
@@ -108,6 +101,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 						"RAILS_ENV.default":                "production",
 						"RAILS_SERVE_STATIC_FILES.default": "true",
 					},
+					ProcessLaunchEnv: map[string]packit.Environment{},
 					Metadata: map[string]interface{}{
 						"built_at":  timeStamp.Format(time.RFC3339Nano),
 						"cache_sha": "some-calculator-sha",
@@ -121,9 +115,58 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		Expect(buffer.String()).To(ContainSubstring("Some Buildpack some-version"))
 		Expect(buffer.String()).To(ContainSubstring("Executing build process"))
-		Expect(buffer.String()).To(ContainSubstring("Configuring environment"))
+		Expect(buffer.String()).To(ContainSubstring("Configuring launch environment"))
 		Expect(buffer.String()).To(ContainSubstring(`RAILS_ENV                -> "production"`))
 		Expect(buffer.String()).To(ContainSubstring(`RAILS_SERVE_STATIC_FILES -> "true"`))
+	})
+
+	it("returns a result with predefined environment variables", func() {
+		os.Setenv("RAILS_ENV", "some-rails-env-val")
+		os.Setenv("RAILS_SERVE_STATIC_FILES", "some-rails-serve-static-files-val")
+
+		result, err := build(packit.BuildContext{
+			WorkingDir: workingDir,
+			CNBPath:    cnbDir,
+			Stack:      "some-stack",
+			Layers:     packit.Layers{Path: layersDir},
+			BuildpackInfo: packit.BuildpackInfo{
+				Name:    "Some Buildpack",
+				Version: "some-version",
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result).To(Equal(packit.BuildResult{
+			Layers: []packit.Layer{
+				{
+					Path:      filepath.Join(layersDir, "assets"),
+					Name:      "assets",
+					Launch:    true,
+					SharedEnv: packit.Environment{},
+					BuildEnv:  packit.Environment{},
+					LaunchEnv: packit.Environment{
+						"RAILS_ENV.default":                "some-rails-env-val",
+						"RAILS_SERVE_STATIC_FILES.default": "some-rails-serve-static-files-val",
+					},
+					ProcessLaunchEnv: map[string]packit.Environment{},
+					Metadata: map[string]interface{}{
+						"built_at":  timeStamp.Format(time.RFC3339Nano),
+						"cache_sha": "some-calculator-sha",
+					},
+				},
+			},
+		}))
+
+		Expect(buildProcess.ExecuteCall.CallCount).To(Equal(1))
+		Expect(buildProcess.ExecuteCall.Receives.WorkingDir).To(Equal(workingDir))
+
+		Expect(buffer.String()).To(ContainSubstring("Some Buildpack some-version"))
+		Expect(buffer.String()).To(ContainSubstring("Executing build process"))
+		Expect(buffer.String()).To(ContainSubstring("Configuring launch environment"))
+		Expect(buffer.String()).To(ContainSubstring(`RAILS_ENV                -> "some-rails-env-val"`))
+		Expect(buffer.String()).To(ContainSubstring(`RAILS_SERVE_STATIC_FILES -> "some-rails-serve-static-files-val"`))
+
+		os.Unsetenv("RAILS_ENV")
+		os.Unsetenv("RAILS_SERVE_STATIC_FILES")
 	})
 
 	context("when checksum matches", func() {
@@ -172,6 +215,7 @@ launch = true
 							"RAILS_ENV.default":                "production",
 							"RAILS_SERVE_STATIC_FILES.default": "true",
 						},
+						ProcessLaunchEnv: map[string]packit.Environment{},
 						Metadata: map[string]interface{}{
 							"built_at":  timeStamp.Format(time.RFC3339Nano),
 							"cache_sha": "some-calculator-sha",
@@ -180,10 +224,89 @@ launch = true
 				},
 			}))
 
+			Expect(calculator.SumCall.Receives.Paths).To(Equal([]string{
+				filepath.Join(workingDir, "app", "assets"),
+			}))
+
 			Expect(buildProcess.ExecuteCall.CallCount).To(Equal(0))
 
 			Expect(buffer.String()).To(ContainSubstring("Some Buildpack some-version"))
 			Expect(buffer.String()).To(ContainSubstring("Reusing cached layer"))
+		})
+
+		context("when there is a lib/assets directory", func() {
+			it.Before(func() {
+				Expect(os.RemoveAll(filepath.Join(workingDir, "app", "assets"))).To(Succeed())
+				Expect(os.MkdirAll(filepath.Join(workingDir, "lib", "assets"), os.ModePerm)).To(Succeed())
+			})
+
+			it("uses that directory to calculate the checksum", func() {
+				_, err := build(packit.BuildContext{
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Stack:      "some-stack",
+					BuildpackInfo: packit.BuildpackInfo{
+						Name:    "Some Buildpack",
+						Version: "some-version",
+					},
+					Layers: packit.Layers{Path: layersDir},
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(calculator.SumCall.Receives.Paths).To(Equal([]string{
+					filepath.Join(workingDir, "lib", "assets"),
+				}))
+			})
+		})
+
+		context("when there is a vendor/assets directory", func() {
+			it.Before(func() {
+				Expect(os.RemoveAll(filepath.Join(workingDir, "app", "assets"))).To(Succeed())
+				Expect(os.MkdirAll(filepath.Join(workingDir, "vendor", "assets"), os.ModePerm)).To(Succeed())
+			})
+
+			it("uses that directory to calculate the checksum", func() {
+				_, err := build(packit.BuildContext{
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Stack:      "some-stack",
+					BuildpackInfo: packit.BuildpackInfo{
+						Name:    "Some Buildpack",
+						Version: "some-version",
+					},
+					Layers: packit.Layers{Path: layersDir},
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(calculator.SumCall.Receives.Paths).To(Equal([]string{
+					filepath.Join(workingDir, "vendor", "assets"),
+				}))
+			})
+		})
+
+		context("when there is a app/javascript directory", func() {
+			it.Before(func() {
+				Expect(os.RemoveAll(filepath.Join(workingDir, "app", "assets"))).To(Succeed())
+				Expect(os.MkdirAll(filepath.Join(workingDir, "app", "javascript"), os.ModePerm)).To(Succeed())
+			})
+
+			it("uses that directory to calculate the checksum", func() {
+				_, err := build(packit.BuildContext{
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Stack:      "some-stack",
+					BuildpackInfo: packit.BuildpackInfo{
+						Name:    "Some Buildpack",
+						Version: "some-version",
+					},
+					Layers: packit.Layers{Path: layersDir},
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(calculator.SumCall.Receives.Paths).To(Equal([]string{
+					filepath.Join(workingDir, "app", "javascript"),
+				}))
+			})
 		})
 
 		context("failure cases", func() {

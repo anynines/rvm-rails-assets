@@ -10,6 +10,7 @@ import (
 	railsassets "github.com/avarteqgmbh/rvm-rails-assets"
 	"github.com/avarteqgmbh/rvm-rails-assets/fakes"
 	"github.com/paketo-buildpacks/packit/pexec"
+	"github.com/paketo-buildpacks/packit/scribe"
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
@@ -44,9 +45,9 @@ func testPrecompileProcess(t *testing.T, context spec.G, it spec.S) {
 			path = os.Getenv("PATH")
 			os.Setenv("PATH", "/some/bin")
 
-			logEmitter := railsassets.NewLogEmitter(bytes.NewBuffer(nil))
+			logger := scribe.NewLogger(bytes.NewBuffer(nil))
 
-			precompileProcess = railsassets.NewPrecompileProcess(executable, logEmitter)
+			precompileProcess = railsassets.NewPrecompileProcess(executable, logger)
 		})
 
 		it.After(func() {
@@ -55,7 +56,7 @@ func testPrecompileProcess(t *testing.T, context spec.G, it spec.S) {
 			Expect(os.RemoveAll(workingDir)).To(Succeed())
 		})
 
-		it("runs the bundle exec assets:precompile process", func() {
+		it("runs the bundle exec rake:precompile process", func() {
 			err := precompileProcess.Execute(workingDir)
 			Expect(err).NotTo(HaveOccurred())
 
