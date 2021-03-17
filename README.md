@@ -3,20 +3,20 @@
 A Cloud Native Buildpack, compiling rails assets.
 Requires "rvm-cnb" (Ruby language) and  "rvm-bundler-cnb" (Ruby bundler).
 
-Initially based on a [paketo rails-assets](https://github.com/paketo-buildpacks/rails-assets) v0.1.0 (e4fe4db715e8dba19516a3cb72acb1963f8b36d2)
+Based on a [paketo rails-assets](https://github.com/paketo-buildpacks/rails-assets) v0.2.0 (6a2741cee08828ab718d13d53046ee0de773ac31)
 
 ## Detect phase
-- Project's "app/assets" directory must exist.
+- Project's assets must be in any directory of `app/assets`, `app/javascript`, `lib/assets`, or `vendor/assets`.
 - Project's "Gemfile" must exist and contain gem "rails".
-- Node-engine ("node" buildpack) is a dependency (Rails v5 mode)
-- If project's "yarn.lock" exists, then Yarn ("yarn-install", "yarn" and "node") is a dependency instead of Node-engine above (Rails v6 mode).
+- Node-engine is a dependency.
+- If project's "yarn.lock" exists, then Yarn installs as a dependency ans `yarn install` runs.
 
 ## Build phase
 - Preserves `RAILS_ENV` environment variable or sets it to `production` if not defined.
-- Sets environment variable `RAILS_SERVE_STATIC_FILES=true`.
+- Preserves `RAILS_SERVE_STATIC_FILES` environment variable or sets it to `true` if not defined.
 - Runs next command in RVM environment.
 ```shell
-"bundle exec rails assets:precompile assets:clean"
+"bundle exec rake assets:precompile assets:clean"
 ```
 
  

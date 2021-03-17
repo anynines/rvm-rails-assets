@@ -8,22 +8,22 @@ import (
 	"github.com/paketo-buildpacks/packit/chronos"
 	"github.com/paketo-buildpacks/packit/fs"
 	"github.com/paketo-buildpacks/packit/pexec"
+	"github.com/paketo-buildpacks/packit/scribe"
 )
 
 func main() {
-	logEmitter := railsassets.NewLogEmitter(os.Stdout)
+	logger := scribe.NewLogger(os.Stdout)
 
 	packit.Run(
 		railsassets.Detect(railsassets.NewGemfileParser()),
 		railsassets.Build(
 			railsassets.NewPrecompileProcess(
 				pexec.NewExecutable("bash"),
-				logEmitter,
+				logger,
 			),
 			fs.NewChecksumCalculator(),
 			railsassets.NewDirectorySetup(),
-			railsassets.NewEnvironment(),
-			logEmitter,
+			logger,
 			chronos.DefaultClock,
 		),
 	)
