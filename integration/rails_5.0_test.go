@@ -2,7 +2,6 @@ package integration_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -98,21 +97,15 @@ func testRails50(t *testing.T, context spec.G, it spec.S) {
 			path, _ = selection.Attr("src")
 		})
 
-		response, err = http.Get(fmt.Sprintf("http://localhost:%s%s", container.HostPort("8080"), path))
-		Expect(err).NotTo(HaveOccurred())
-		defer response.Body.Close()
-
-		content, err := ioutil.ReadAll(response.Body)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(string(content)).To(ContainSubstring("Hello from Javascript!"))
+		Eventually(container).Should(Serve(ContainSubstring("Hello from Javascript!")).OnPort(8080).WithEndpoint(path))
 
 		Expect(logs).To(ContainLines(
 			MatchRegexp(fmt.Sprintf(`%s \d+\.\d+\.\d+`, settings.Buildpack.Name)),
 			"  Executing build process",
-			"    Running 'bundle exec rails assets:precompile assets:clean'",
+			"    Running 'bash --login -c source /layers/com.anynines.buildpacks.rvm/rvm/profile.d/rvm &&  bundle exec rake assets:precompile assets:clean'",
 			MatchRegexp(`      Completed in ([0-9]*(\.[0-9]*)?[a-z]+)+`),
 			"",
-			"  Configuring environment",
+			"  Configuring launch environment",
 			`    RAILS_ENV                -> "production"`,
 			`    RAILS_SERVE_STATIC_FILES -> "true"`,
 		))
@@ -134,11 +127,22 @@ func testRails50(t *testing.T, context spec.G, it spec.S) {
 			Expect(firstImage.Buildpacks[3].Layers).To(HaveKey("assets"))
 
 			container, err := settings.Docker.Container.Run.
-				WithCommand(fmt.Sprintf("ls -alR /layers/%s/assets/public/assets", strings.ReplaceAll(settings.Buildpack.ID, "/", "_"))).
+				WithEnv(map[string]string{
+					"PORT":            "8080",
+					"SECRET_KEY_BASE": "some-secret",
+				}).
+				WithPublish("8080").
+				WithPublishAll().
 				Execute(firstImage.ID)
 			Expect(err).NotTo(HaveOccurred())
 
 			containerIDs[container.ID] = struct{}{}
+
+			Eventually(container).Should(BeAvailable())
+
+			response, err := http.Get(fmt.Sprintf("http://localhost:%s", container.HostPort("8080")))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusOK))
 
 			secondImage, secondLogs, err := build.Execute(name, source)
 			Expect(err).NotTo(HaveOccurred(), secondLogs.String)
@@ -150,11 +154,22 @@ func testRails50(t *testing.T, context spec.G, it spec.S) {
 			Expect(secondImage.Buildpacks[3].Layers).To(HaveKey("assets"))
 
 			container, err = settings.Docker.Container.Run.
-				WithCommand(fmt.Sprintf("ls -alR /layers/%s/assets/public/assets", strings.ReplaceAll(settings.Buildpack.ID, "/", "_"))).
+				WithEnv(map[string]string{
+					"PORT":            "8080",
+					"SECRET_KEY_BASE": "some-secret",
+				}).
+				WithPublish("8080").
+				WithPublishAll().
 				Execute(secondImage.ID)
 			Expect(err).NotTo(HaveOccurred())
 
 			containerIDs[container.ID] = struct{}{}
+
+			Eventually(container).Should(BeAvailable())
+
+			response, err = http.Get(fmt.Sprintf("http://localhost:%s", container.HostPort("8080")))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusOK))
 
 			Expect(secondImage.Buildpacks[3].Layers["assets"].Metadata["built_at"]).To(Equal(firstImage.Buildpacks[3].Layers["assets"].Metadata["built_at"]))
 			Expect(secondImage.Buildpacks[3].Layers["assets"].Metadata["cache_sha"]).To(Equal(firstImage.Buildpacks[3].Layers["assets"].Metadata["cache_sha"]))
