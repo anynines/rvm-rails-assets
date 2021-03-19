@@ -70,6 +70,7 @@ func testPrecompileProcess(t *testing.T, context spec.G, it spec.S) {
 
 		it("runs the bundle exec assets:precompile process when env variable DB_ADAPTER is set", func() {
 			os.Setenv("DB_ADAPTER", "someadapter")
+			os.Setenv("RAILS_ENV", "development")
 
 			err := precompileProcess.Execute(workingDir)
 			Expect(err).NotTo(HaveOccurred())
@@ -78,7 +79,7 @@ func testPrecompileProcess(t *testing.T, context spec.G, it spec.S) {
 			Expect(executions[0].Args).To(Equal([]string{
 				"--login",
 				"-c",
-				"source profile.d/rvm && DB_ADAPTER=someadapter bundle exec rake assets:precompile assets:clean",
+				"source profile.d/rvm && DB_ADAPTER=someadapter RAILS_ENV=development bundle exec rake assets:precompile assets:clean",
 			}))
 		})
 

@@ -66,14 +66,14 @@ func Detect(gemfileParser Parser) packit.DetectFunc {
 			return packit.DetectResult{}, packit.Fail.WithMessage("failed to find assets in app/assets, app/javascript, lib/assets, or vendor/assets")
 		}
 
-		hasRails, err := gemfileParser.Parse(filepath.Join(context.WorkingDir, "Gemfile"))
+		_, err := gemfileParser.Parse(filepath.Join(context.WorkingDir, "Gemfile"))
 		if err != nil {
 			return packit.DetectResult{}, fmt.Errorf("failed to parse Gemfile: %w", err)
 		}
 
-		if !hasRails {
-			return packit.DetectResult{}, packit.Fail.WithMessage("failed to find rails gem in Gemfile")
-		}
+		// if !hasRails {
+		// 	return packit.DetectResult{}, packit.Fail.WithMessage("failed to find rails gem in Gemfile")
+		// }
 
 		requirements := []packit.BuildPlanRequirement{
 			{

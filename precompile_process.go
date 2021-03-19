@@ -38,11 +38,15 @@ func NewPrecompileProcess(executable Executable, logger scribe.Logger) Precompil
 func (p PrecompileProcess) Execute(workingDir string) error {
 	buffer := bytes.NewBuffer(nil)
 
-	dbAdapterEnvArg := ""
 	env := []string{}
-	if val, ok := os.LookupEnv("DB_ADAPTER"); ok {
-		dbAdapterEnvArg = "DB_ADAPTER=" + val
-		env = append(env, dbAdapterEnvArg)
+	for _, e := range []string{
+		"DB_ADAPTER",
+		"SECRET_KEY_BASE",
+		"RAILS_ENV",
+	} {
+		if val, ok := os.LookupEnv(e); ok {
+			env = append(env, e+"="+val)
+		}
 	}
 
 	args := []string{
@@ -53,7 +57,7 @@ func (p PrecompileProcess) Execute(workingDir string) error {
 				"source",
 				filepath.Join(os.ExpandEnv("$rvm_path"), "profile.d", "rvm"),
 				"&&",
-				dbAdapterEnvArg,
+				strings.Join(env, " "),
 				"bundle",
 				"exec",
 				"rake",
