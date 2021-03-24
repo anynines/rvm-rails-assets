@@ -7,9 +7,9 @@ Based on a [paketo rails-assets](https://github.com/paketo-buildpacks/rails-asse
 
 ## Detect phase
 - Project's assets must be in any directory of `app/assets`, `app/javascript`, `lib/assets`, or `vendor/assets`.
-- Project's "Gemfile" must exist and contain gem "rails".
-- Node-engine is a dependency.
-- If project's "yarn.lock" exists, then Yarn installs as a dependency ans `yarn install` runs.
+- Project's `Gemfile` must exist. There is no need to Gem `rails` be defined directly in `Gemfile`.
+- Node-engine buildpack is a dependency.
+- If project's "yarn.lock" exists, then Yarn installs as a dependency and `yarn install` runs.
 
 ## Build phase
 - Preserves `RAILS_ENV` environment variable or sets it to `production` if not defined.
@@ -19,19 +19,21 @@ Based on a [paketo rails-assets](https://github.com/paketo-buildpacks/rails-asse
 "bundle exec rake assets:precompile assets:clean"
 ```
 
+Any of environment variables `RAILS_ENV`, `DB_ADAPTER` or `SECRET_KEY_BASE` may be passed as arguments
+directly to a rake process if project requires them. For example passing `--env RAILS_ENV=production`
+to a `pack` command, causes assets compile command to be changed as follows:
+```shell
+"RAILS_ENV=production bundle exec rake assets:precompile assets:clean"
+```
  
 ## Buildpack building command example
 *package.sh script downloads "jam" and "pack" binaries and uses them.*
 
 ```sh
-$ scripts/package.sh -v "0.0.1"
+$ scripts/package.sh -v "1.2.3"
 ```
 It packs .tgz and .cnb to a "build" directory.
 
-If only binaries are sufficient, then next command just compiles them to a "bin" directory:
-```sh
-$ scripts/build.sh
-```
 
 ## Order group for `builder.toml` example
 [[order]]
