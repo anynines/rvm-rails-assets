@@ -163,20 +163,20 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 		})
 	})
 
-	context("when the Gemfile does not list rails", func() {
-		it.Before(func() {
-			gemfileParser.ParseCall.Returns.HasRails = false
+	// context("when the Gemfile does not list rails", func() {
+	// 	it.Before(func() {
+	// 		gemfileParser.ParseCall.Returns.HasRails = false
 
-			Expect(os.MkdirAll(filepath.Join(workingDir, "app", "javascript"), os.ModePerm)).To(Succeed())
-		})
+	// 		Expect(os.MkdirAll(filepath.Join(workingDir, "app", "javascript"), os.ModePerm)).To(Succeed())
+	// 	})
 
-		it("fails with an error message", func() {
-			_, err := detect(packit.DetectContext{
-				WorkingDir: workingDir,
-			})
-			Expect(err).To(MatchError(packit.Fail.WithMessage("failed to find rails gem in Gemfile")))
-		})
-	})
+	// 	it("fails with an error message", func() {
+	// 		_, err := detect(packit.DetectContext{
+	// 			WorkingDir: workingDir,
+	// 		})
+	// 		Expect(err).To(MatchError(packit.Fail.WithMessage("failed to find rails gem in Gemfile")))
+	// 	})
+	// })
 
 	context("failure cases", func() {
 		context("when the gemfile parser fails", func() {
