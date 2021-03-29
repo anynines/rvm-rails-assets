@@ -71,7 +71,7 @@ func (p PrecompileProcess) Execute(workingDir string) error {
 	p.logger.Subprocess("Running 'bash %s'", strings.Join(args, " "))
 	err := p.executable.Execute(pexec.Execution{
 		Args:   args,
-		Env:    env,
+		Env:    append(os.Environ(), env...),
 		Stdout: buffer,
 		Stderr: buffer,
 	})
