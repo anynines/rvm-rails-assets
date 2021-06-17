@@ -100,19 +100,23 @@ func Build(
 			return packit.BuildResult{}, err
 		}
 
-		previousSum, _ := assetsLayer.Metadata["cache_sha"].(string)
-		if sum == previousSum {
-			logger.Process("Reusing cached layer %s", assetsLayer.Path)
-			logger.Break()
+		if os.Getenv("RAILS_ASSETS_DISABLE_CACHING") == "FALSE" {
+			previousSum, _ := assetsLayer.Metadata["cache_sha"].(string)
+			if sum == previousSum {
+				logger.Process("Reusing cached layer %s", assetsLayer.Path)
+				logger.Break()
 
-			err = environmentSetup.Link(assetsLayer.Path, context.WorkingDir)
-			if err != nil {
-				return packit.BuildResult{}, err
+				err = environmentSetup.Link(assetsLayer.Path, context.WorkingDir)
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
+
+				return packit.BuildResult{
+					Layers: []packit.Layer{assetsLayer},
+				}, nil
 			}
-
-			return packit.BuildResult{
-				Layers: []packit.Layer{assetsLayer},
-			}, nil
+		} else {
+			logger.Process("Cached layer immutability check is DISABLED")
 		}
 
 		err = environmentSetup.ResetLayer(assetsLayer.Path)

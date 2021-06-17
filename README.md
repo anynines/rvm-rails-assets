@@ -3,7 +3,7 @@
 A Cloud Native Buildpack, compiling rails assets.
 Requires "rvm-cnb" (Ruby language) and  "rvm-bundler-cnb" (Ruby bundler).
 
-Based on a [paketo rails-assets](https://github.com/paketo-buildpacks/rails-assets) v0.2.0 (6a2741cee08828ab718d13d53046ee0de773ac31)
+Based on a [paketo rails-assets](https://github.com/paketo-buildpacks/rails-assets) v0.2.1 (645fda01c716099e9754235040fa8845e191bdec)
 
 ## Detect phase
 - Project's assets must be in any directory of `app/assets`, `app/javascript`, `lib/assets`, or `vendor/assets`.
@@ -18,6 +18,9 @@ Based on a [paketo rails-assets](https://github.com/paketo-buildpacks/rails-asse
 ```shell
 "bundle exec rake assets:precompile assets:clean"
 ```
+
+Buildpack may try to reuse cached layer with assets if SHA256 checksum of assets directories shown above wasn't changed since last run. This behaviour may be enabled by setting environment variable `RAILS_ASSETS_DISABLE_CACHING=FALSE`.
+If set, `bundle exec rake assets:precompile assets:clean` will not run if there weren't any changes in these directories.
 
 Any of environment variables `RAILS_ENV`, `DB_ADAPTER` or `SECRET_KEY_BASE` may be passed as arguments
 directly to a rake process if project requires them. For example passing `--env RAILS_ENV=production`
