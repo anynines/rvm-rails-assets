@@ -101,6 +101,7 @@ func testRails50(t *testing.T, context spec.G, it spec.S) {
 
 		Expect(logs).To(ContainLines(
 			MatchRegexp(fmt.Sprintf(`%s \d+\.\d+\.\d+`, settings.Buildpack.Name)),
+			"  Cached layer immutability check is DISABLED",
 			"  Executing build process",
 			"    Running 'bash --login -c source /layers/com.anynines.buildpacks.rvm/rvm/profile.d/rvm &&  bundle exec rake assets:precompile assets:clean'",
 			MatchRegexp(`      Completed in ([0-9]*(\.[0-9]*)?[a-z]+)+`),
@@ -115,7 +116,10 @@ func testRails50(t *testing.T, context spec.G, it spec.S) {
 		it("reuses the assets layer", func() {
 			build := settings.Pack.WithNoColor().Build.
 				WithBuildpacks(buildpacks...).
-				WithPullPolicy("never")
+				WithPullPolicy("never").
+				WithEnv((map[string]string{
+					"RAILS_ASSETS_DISABLE_CACHING": "FALSE",
+				}))
 
 			firstImage, firstLogs, err := build.Execute(name, source)
 			Expect(err).NotTo(HaveOccurred(), firstLogs.String())

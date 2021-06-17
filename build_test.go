@@ -191,7 +191,25 @@ launch = true
 			calculator.SumCall.Returns.String = "some-calculator-sha"
 		})
 
+		it("skips reusing the assets layer", func() {
+			_, err := build(packit.BuildContext{
+				WorkingDir: workingDir,
+				CNBPath:    cnbDir,
+				Stack:      "some-stack",
+				BuildpackInfo: packit.BuildpackInfo{
+					Name:    "Some Buildpack",
+					Version: "some-version",
+				},
+				Layers: packit.Layers{Path: layersDir},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(buffer.String()).To(ContainSubstring("Some Buildpack some-version"))
+			Expect(buffer.String()).To(ContainSubstring("Cached layer immutability check is DISABLED"))
+		})
+
 		it("reuses the cached layer", func() {
+			os.Setenv("RAILS_ASSETS_DISABLE_CACHING", "FALSE")
 			result, err := build(packit.BuildContext{
 				WorkingDir: workingDir,
 				CNBPath:    cnbDir,
