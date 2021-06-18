@@ -1,5 +1,5 @@
 {
-  "builder": "anyninesgmbh/builder:bionic",
+  "builder": "anyninesgmbh/rails-builder:latest",
   "rvm-cnb": "github.com/avarteqgmbh/rvm-cnb",
   "rvm-bundler-cnb": "github.com/avarteqgmbh/rvm-bundler-cnb",
   "node-engine": "github.com/paketo-buildpacks/node-engine",
