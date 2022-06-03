@@ -13,6 +13,7 @@ import (
 	"github.com/sclevine/spec/report"
 
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 )
 
 var settings struct {
@@ -68,6 +69,10 @@ func TestIntegration(t *testing.T) {
 	file, err = os.Open("../buildpack.toml")
 	Expect(err).NotTo(HaveOccurred())
 
+	// Do not truncate Gomega matcher output
+	// The buildpack output text can be large and we often want to see all of it.
+	format.MaxLength = 0
+
 	_, err = toml.DecodeReader(file, &settings)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(file.Close()).To(Succeed())
@@ -107,5 +112,6 @@ func TestIntegration(t *testing.T) {
 	suite := spec.New("Integration", spec.Parallel(), spec.Report(report.Terminal{}))
 	suite("Rails5.0", testRails50)
 	suite("Rails6.0", testRails60)
+	suite("ReusingLayerRebuild", testReusingLayerRebuild)
 	suite.Run(t)
 }

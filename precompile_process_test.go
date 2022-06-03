@@ -3,14 +3,13 @@ package railsassets_test
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
 	"os"
 	"testing"
 
 	railsassets "github.com/avarteqgmbh/rvm-rails-assets"
 	"github.com/avarteqgmbh/rvm-rails-assets/fakes"
-	"github.com/paketo-buildpacks/packit/pexec"
-	"github.com/paketo-buildpacks/packit/scribe"
+	"github.com/paketo-buildpacks/packit/v2/pexec"
+	"github.com/paketo-buildpacks/packit/v2/scribe"
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
@@ -31,7 +30,7 @@ func testPrecompileProcess(t *testing.T, context spec.G, it spec.S) {
 
 		it.Before(func() {
 			var err error
-			workingDir, err = ioutil.TempDir("", "working-dir")
+			workingDir, err = os.MkdirTemp("", "working-dir")
 			Expect(err).NotTo(HaveOccurred())
 
 			executions = []pexec.Execution{}
@@ -45,7 +44,7 @@ func testPrecompileProcess(t *testing.T, context spec.G, it spec.S) {
 			path = os.Getenv("PATH")
 			os.Setenv("PATH", "/some/bin")
 
-			logger := scribe.NewLogger(bytes.NewBuffer(nil))
+			logger := scribe.NewEmitter(bytes.NewBuffer(nil))
 
 			precompileProcess = railsassets.NewPrecompileProcess(executable, logger)
 		})

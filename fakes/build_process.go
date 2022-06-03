@@ -4,7 +4,7 @@ import "sync"
 
 type BuildProcess struct {
 	ExecuteCall struct {
-		sync.Mutex
+		mutex     sync.Mutex
 		CallCount int
 		Receives  struct {
 			WorkingDir string
@@ -17,8 +17,8 @@ type BuildProcess struct {
 }
 
 func (f *BuildProcess) Execute(param1 string) error {
-	f.ExecuteCall.Lock()
-	defer f.ExecuteCall.Unlock()
+	f.ExecuteCall.mutex.Lock()
+	defer f.ExecuteCall.mutex.Unlock()
 	f.ExecuteCall.CallCount++
 	f.ExecuteCall.Receives.WorkingDir = param1
 	if f.ExecuteCall.Stub != nil {
