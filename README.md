@@ -3,7 +3,7 @@
 A Cloud Native Buildpack, compiling rails assets.
 Requires "rvm-cnb" (Ruby language) and  "rvm-bundler-cnb" (Ruby bundler).
 
-Based on a [paketo rails-assets](https://github.com/paketo-buildpacks/rails-assets) v0.2.1 (645fda01c716099e9754235040fa8845e191bdec)
+Based on a [paketo rails-assets](https://github.com/paketo-buildpacks/rails-assets) v0.5.0(fb423968e88ce3947c422d12fcc7ebe52f803a6a) with golang libraries updates actual on 20.06.2022.
 
 ## Detect phase
 - Project's assets must be in any directory of `app/assets`, `app/javascript`, `lib/assets`, or `vendor/assets`.

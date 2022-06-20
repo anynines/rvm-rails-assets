@@ -81,7 +81,6 @@ GEM
       racc (~> 1.4)
     puma (4.3.7)
       nio4r (~> 2.0)
-    racc (1.5.2)
     rack (2.2.3)
     rack-proxy (0.7.0)
       rack
@@ -157,7 +156,7 @@ DEPENDENCIES
   webpacker (~> 5)
 
 RUBY VERSION
-   ruby 2.6.3p62
+   ruby 3.0.4p208
 
 BUNDLED WITH
-   2.1.4
+   2.2.22
