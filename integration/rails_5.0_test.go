@@ -64,6 +64,9 @@ func testRails50(t *testing.T, context spec.G, it spec.S) {
 		image, logs, err := settings.Pack.WithNoColor().Build.
 			WithBuildpacks(buildpacks...).
 			WithPullPolicy("never").
+			WithEnv(map[string]string{
+				"BP_LOG_LEVEL": "DEBUG",
+			}).
 			Execute(name, source)
 		Expect(err).NotTo(HaveOccurred(), logs.String())
 
@@ -101,90 +104,26 @@ func testRails50(t *testing.T, context spec.G, it spec.S) {
 
 		Expect(logs).To(ContainLines(
 			MatchRegexp(fmt.Sprintf(`%s \d+\.\d+\.\d+`, settings.Buildpack.Name)),
+			"  Checking checksum paths for the following directories:",
+			"    /workspace/app/assets",
+			"",
+			"",
+			"",
+			"",
+			"  Getting the layer associated with Rails assets:",
+			fmt.Sprintf("    /layers/%s/assets", strings.ReplaceAll(settings.Buildpack.ID, "/", "_")),
+			"",
 			"  Cached layer immutability check is DISABLED",
+			"  Symlinking asset directories to /workspace",
 			"  Executing build process",
 			"    Running 'bash --login -c source /layers/com.anynines.buildpacks.rvm/rvm/profile.d/rvm &&  bundle exec rake assets:precompile assets:clean'",
+		))
+		Expect(logs).To(ContainLines(
 			MatchRegexp(`      Completed in ([0-9]*(\.[0-9]*)?[a-z]+)+`),
 			"",
 			"  Configuring launch environment",
 			`    RAILS_ENV                -> "production"`,
 			`    RAILS_SERVE_STATIC_FILES -> "true"`,
 		))
-	})
-
-	context("when executing a rebuild", func() {
-		it("reuses the assets layer", func() {
-			build := settings.Pack.WithNoColor().Build.
-				WithBuildpacks(buildpacks...).
-				WithPullPolicy("never").
-				WithEnv((map[string]string{
-					"RAILS_ASSETS_DISABLE_CACHING": "FALSE",
-				}))
-
-			firstImage, firstLogs, err := build.Execute(name, source)
-			Expect(err).NotTo(HaveOccurred(), firstLogs.String())
-
-			imageIDs[firstImage.ID] = struct{}{}
-
-			Expect(firstImage.Buildpacks).To(HaveLen(4))
-			Expect(firstImage.Buildpacks[3].Key).To(Equal(settings.Buildpack.ID))
-			Expect(firstImage.Buildpacks[3].Layers).To(HaveKey("assets"))
-
-			container, err := settings.Docker.Container.Run.
-				WithEnv(map[string]string{
-					"PORT":            "8080",
-					"SECRET_KEY_BASE": "some-secret",
-				}).
-				WithPublish("8080").
-				WithPublishAll().
-				Execute(firstImage.ID)
-			Expect(err).NotTo(HaveOccurred())
-
-			containerIDs[container.ID] = struct{}{}
-
-			Eventually(container).Should(BeAvailable())
-
-			response, err := http.Get(fmt.Sprintf("http://localhost:%s", container.HostPort("8080")))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(response.StatusCode).To(Equal(http.StatusOK))
-
-			secondImage, secondLogs, err := build.Execute(name, source)
-			Expect(err).NotTo(HaveOccurred(), secondLogs.String)
-
-			imageIDs[secondImage.ID] = struct{}{}
-
-			Expect(secondImage.Buildpacks).To(HaveLen(4))
-			Expect(secondImage.Buildpacks[3].Key).To(Equal(settings.Buildpack.ID))
-			Expect(secondImage.Buildpacks[3].Layers).To(HaveKey("assets"))
-
-			container, err = settings.Docker.Container.Run.
-				WithEnv(map[string]string{
-					"PORT":            "8080",
-					"SECRET_KEY_BASE": "some-secret",
-				}).
-				WithPublish("8080").
-				WithPublishAll().
-				Execute(secondImage.ID)
-			Expect(err).NotTo(HaveOccurred())
-
-			containerIDs[container.ID] = struct{}{}
-
-			Eventually(container).Should(BeAvailable())
-
-			response, err = http.Get(fmt.Sprintf("http://localhost:%s", container.HostPort("8080")))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(response.StatusCode).To(Equal(http.StatusOK))
-
-			Expect(secondImage.Buildpacks[3].Layers["assets"].Metadata["built_at"]).To(Equal(firstImage.Buildpacks[3].Layers["assets"].Metadata["built_at"]))
-			Expect(secondImage.Buildpacks[3].Layers["assets"].Metadata["cache_sha"]).To(Equal(firstImage.Buildpacks[3].Layers["assets"].Metadata["cache_sha"]))
-
-			// TODO: why is the image id changing?
-			// Expect(secondImage.ID).To(Equal(firstImage.ID), fmt.Sprintf("%s\n\n%s", firstLogs, secondLogs))
-
-			Expect(secondLogs).To(ContainLines(
-				fmt.Sprintf("%s %s", settings.Buildpack.Name, "1.2.3"),
-				fmt.Sprintf("  Reusing cached layer /layers/%s/assets", strings.ReplaceAll(settings.Buildpack.ID, "/", "_")),
-			))
-		})
 	})
 }

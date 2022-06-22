@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/paketo-buildpacks/packit/pexec"
-	"github.com/paketo-buildpacks/packit/scribe"
+	"github.com/paketo-buildpacks/packit/v2/pexec"
+	"github.com/paketo-buildpacks/packit/v2/scribe"
 )
 
 //go:generate faux --interface Executable --output fakes/executable.go
@@ -21,11 +21,11 @@ type Executable interface {
 // PrecompileProcess performs the "rake assets:precompile" build process.
 type PrecompileProcess struct {
 	executable Executable
-	logger     scribe.Logger
+	logger     scribe.Emitter
 }
 
 // NewPrecompileProcess initializes an instance of PrecompileProcess.
-func NewPrecompileProcess(executable Executable, logger scribe.Logger) PrecompileProcess {
+func NewPrecompileProcess(executable Executable, logger scribe.Emitter) PrecompileProcess {
 	return PrecompileProcess{
 		executable: executable,
 		logger:     logger,
@@ -72,8 +72,8 @@ func (p PrecompileProcess) Execute(workingDir string) error {
 	err := p.executable.Execute(pexec.Execution{
 		Args:   args,
 		Env:    append(os.Environ(), env...),
-		Stdout: buffer,
-		Stderr: buffer,
+		Stdout: p.logger.ActionWriter,
+		Stderr: p.logger.ActionWriter,
 	})
 
 	if err != nil {

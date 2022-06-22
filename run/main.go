@@ -4,15 +4,15 @@ import (
 	"os"
 
 	railsassets "github.com/avarteqgmbh/rvm-rails-assets"
-	"github.com/paketo-buildpacks/packit"
-	"github.com/paketo-buildpacks/packit/chronos"
-	"github.com/paketo-buildpacks/packit/fs"
-	"github.com/paketo-buildpacks/packit/pexec"
-	"github.com/paketo-buildpacks/packit/scribe"
+	"github.com/paketo-buildpacks/packit/v2"
+	"github.com/paketo-buildpacks/packit/v2/chronos"
+	"github.com/paketo-buildpacks/packit/v2/fs"
+	"github.com/paketo-buildpacks/packit/v2/pexec"
+	"github.com/paketo-buildpacks/packit/v2/scribe"
 )
 
 func main() {
-	logger := scribe.NewLogger(os.Stdout)
+	logger := scribe.NewEmitter(os.Stdout).WithLevel(os.Getenv("BP_LOG_LEVEL"))
 
 	packit.Run(
 		railsassets.Detect(railsassets.NewGemfileParser()),
